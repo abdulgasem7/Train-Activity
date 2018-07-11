@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Tain Activity</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <!-- jQuery library -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <!-- Latest compiled JavaScript -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
+    <script src="https://cdn.jsdelivr.net/momentjs/2.12.0/moment.min.js"></script>
+
+    <link href="https://fonts.googleapis.com/css?family=Orbitron" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-dark bg-primary header">
+        <div class="container text-center">
+            <div class="navbar-brand header-brand">
+                <h4>Train Schedule</h4>
+                <h5>Check the status of your train below</h5>
+            </div>
+        </div>
+
+    </nav>
+    <!-- Navbar End -->
+
+    <!-- Content -->
+    <div class="row">
+
+        <div class="col-lg-2 col-md-2 col-sm-2">
+        </div>
+
+
+        <div class="col-lg-8 col-md-8 col-sm-8">
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <div class="panel-heading">
+                        <h2>Add Train</h2>
+                    </div>
+                    <form>
+                        <div class="form-group">
+                            <label for="name">Train Name</label>
+                            <input type="text" class="form-control" id="nameInput">
+                        </div>
+                        <div class="form-group">
+                            <label for="role">Destination</label>
+                            <input type="text" class="validate" id="role">
+                        </div>
+                        <div class="form-group">
+                            <label class="active" for="">First Train (HH:mm Military Time)</label>
+                            <input class="validate" type="time" value="2011-08-19" id="date">
+                        </div>
+                        <div class="form-group">
+                            <label for="role">Frequency (minutes)</label>
+                            <input type="number" class="validate" id="rate">
+                        </div>
+                        <button type="submit" class="btn btn-primary submit" id="sendData">Submit</button>
+
+                    </form>
+
+                    <div class="panel-body">
+                        <div class="panel-heading">
+                            <h2>Current Train Schedule</h2>
+                        </div>
+                        <table class="table table-hover" id='trainTable'>
+                            <thead>
+                                <tr>
+                                    <th scope="col" id="nameDisplay">Train Name</th>
+                                    <th scope="col" id="roleDisplay">Destination</th>
+                                    <th scope="col" id="dateDisplay">Frequency (minutes)</th>
+                                    <th scope="col" id="rateDisplay">Next Arrival</th>
+                                    <th>Minutes Away</th>
+                                </tr>
+                            </thead>
+                            <tbody id="everythingDisplay">
+
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- Content End -->
+
+
+    <script>
+        // Initialize Firebase
+        var config = {
+            apiKey: "AIzaSyD7uL6vHEqcZx5pMaB56jSpTTCfw1npwlI",
+            authDomain: "denver-1017.firebaseapp.com",
+            databaseURL: "https://denver-1017.firebaseio.com",
+            projectId: "denver-1017",
+            storageBucket: "denver-1017.appspot.com",
+            messagingSenderId: "645020670587"
+        };
+        firebase.initializeApp(config);
+        var database = firebase.database();
+
+        
+
+        // THE MATH!
+        //subtracts the first train time back a year to ensure it's before current time.
+        var currentTime = moment();
+        var firstTrainConverted = moment(date, "hh:mm").subtract("1, years");
+        // the time difference between current time and the first train
+        var difference = currentTime.diff(moment(firstTrainConverted), "minutes");
+        var remainder = difference % rate;
+        var minUntilTrain = rate - remainder;
+        var nextTrain = moment().add(minUntilTrain, "minutes").format("hh:mm a");
+
+
+        $('#sendData').on("click", function (event) {
+
+            var nameform = $('#nameInput').val().trim();
+            var roleform = $('#role').val().trim();
+            var dateform = $('#date').val().trim();
+            var rateform = $('#rate').val().trim();
+
+            if (nameform == "") {
+                alert('Enter a train name.');
+                return false;
+            }
+            if (roleform == "") {
+                alert('Enter a destination.');
+                return false;
+            }
+            if (dateform == "") {
+                alert('Enter a first train time.');
+                return false;
+            }
+            if (rateform == "") {
+                alert('Enter a frequency');
+                return false;
+            }
+
+            database.ref().push({
+
+                nameInput: nameform,
+                role: roleform,
+                date: dateform,
+                rate: rateform,
+                min: minUntilTrain,
+                next: nextTrain
+
+            });
+
+        });
+
+        database.ref().on("child_added", function (snapshot) {
+            var sv = snapshot.val();
+            console.log(sv);
+            $("#trainTable > tbody").append("<tr><td>" + sv.nameInput + "</td><td>" + sv.role + "</td><td>" +
+                sv.date + "</td><td>" + sv.min + "</td><td>" + sv.next + "</td></tr>");
+        })
+    </script>
+</body>
+
+</html>
